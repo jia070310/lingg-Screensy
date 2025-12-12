@@ -1,0 +1,7 @@
+PyQt5>=5.15.0
+opencv-python>=4.5.0
+pycaw>=20230407
+pyaudiowpatch>=0.2.12.12
+pynput>=1.7.6
+pyinstaller>=5.0.0
+

@@ -1,0 +1,86 @@
+name: 编译打包
+
+on:
+  workflow_dispatch:  # 允许手动触发
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 设置Python环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 编译EXE文件
+      run: |
+        pyinstaller build_exe.spec --clean --noconfirm
+        
+    - name: 安装Inno Setup
+      run: |
+        $innoUrl = "https://jrsoftware.org/download.php/is.exe"
+        $innoPath = "$env:ProgramFiles(x86)\Inno Setup 6"
+        $isccPath = "$innoPath\ISCC.exe"
+        if (-not (Test-Path $isccPath)) {
+          Write-Host "下载Inno Setup..."
+          Invoke-WebRequest -Uri $innoUrl -OutFile "$env:TEMP\is.exe"
+          Write-Host "安装Inno Setup..."
+          Start-Process -FilePath "$env:TEMP\is.exe" -ArgumentList "/SILENT /ALLUSERS" -Wait
+          Start-Sleep -Seconds 5
+          # 等待安装完成
+          $timeout = 60
+          $elapsed = 0
+          while (-not (Test-Path $isccPath) -and $elapsed -lt $timeout) {
+            Start-Sleep -Seconds 2
+            $elapsed += 2
+          }
+        }
+        if (Test-Path $isccPath) {
+          Write-Host "Inno Setup已安装: $isccPath"
+        } else {
+          Write-Error "Inno Setup安装失败"
+          exit 1
+        }
+        
+    - name: 打包安装程序
+      run: |
+        $isccPath = "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
+        if (Test-Path $isccPath) {
+          Write-Host "开始打包安装程序..."
+          & $isccPath installer.iss
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "打包失败，退出代码: $LASTEXITCODE"
+            exit 1
+          }
+          Write-Host "打包完成"
+        } else {
+          Write-Error "Inno Setup未找到: $isccPath"
+          exit 1
+        }
+        
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: 安装程序
+        path: |
+          dist/灵感录屏工具安装程序.exe
+          dist/灵感录屏工具.exe
+        retention-days: 30
+
