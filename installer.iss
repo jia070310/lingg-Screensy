@@ -28,7 +28,6 @@ VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
-VersionInfoFileVersion={#MyAppVersion}
 VersionInfoDescription={#MyAppName} 安装程序
 VersionInfoCopyright=Copyright (C) 2024
 
