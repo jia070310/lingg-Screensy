@@ -22,6 +22,8 @@ jobs:
     steps:
     - name: 检出代码
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # 获取所有历史记录，用于创建 tag
       
     - name: 设置Python环境
       uses: actions/setup-python@v5
@@ -339,6 +341,24 @@ jobs:
         }
       shell: pwsh
     
+    - name: 创建 Git Tag
+      if: github.event_name != 'pull_request'
+      run: |
+        $tagName = "${{ steps.version.outputs.tag }}"
+        Write-Host "创建 tag: $tagName"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        # 检查 tag 是否已存在
+        if (git rev-parse "$tagName" >$null 2>&1) {
+          Write-Host "Tag $tagName 已存在，跳过创建"
+        } else {
+          git tag -a $tagName -m "Release $tagName"
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git $tagName
+          Write-Host "Tag $tagName 创建并推送成功"
+        }
+      shell: pwsh
+      continue-on-error: true
+    
     - name: 发布到 Releases
       if: github.event_name != 'pull_request'
       uses: softprops/action-gh-release@v1
@@ -348,18 +368,9 @@ jobs:
           dist/灵感录屏工具.exe
         tag_name: ${{ steps.version.outputs.tag }}
         name: Release ${{ steps.version.outputs.version }}
-        draft: true
+        draft: false
         prerelease: false
         generate_release_notes: true
-    
-    - name: 发布 Draft Release
-      if: github.event_name != 'pull_request'
-      continue-on-error: true
-      run: |
-        $tagName = "${{ steps.version.outputs.tag }}"
-        Write-Host "发布 Draft Release: $tagName"
-        gh release edit $tagName --draft=false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: pwsh
 
