@@ -306,12 +306,15 @@ jobs:
         } else {
           $shortCommit = $commitHash
         }
-        # 生成版本号：v1.0.0-日期时间-commithash
-        $tagName = "v1.0.0-$date-$shortCommit"
+        # 使用运行 ID 确保唯一性（避免同一 commit 多次运行时的冲突）
+        $runId = "${{ github.run_id }}"
+        # 生成版本号：v1.0.0-日期时间-commithash-runid
+        $tagName = "v1.0.0-$date-$shortCommit-$runId"
         $versionName = "v1.0.0-$date"
         Write-Host "生成版本号: $tagName"
         Write-Host "版本名称: $versionName"
         Write-Host "提交: $shortCommit"
+        Write-Host "运行 ID: $runId"
         "tag=$tagName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         "version=$versionName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
       shell: pwsh
