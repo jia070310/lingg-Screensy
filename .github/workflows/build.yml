@@ -359,18 +359,40 @@ jobs:
       shell: pwsh
       continue-on-error: true
     
-    - name: 发布到 Releases
+    - name: 使用 GitHub CLI 创建 Release 并上传文件
       if: github.event_name != 'pull_request'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          dist/灵感录屏工具安装程序.exe
-          dist/灵感录屏工具.exe
-        tag_name: ${{ steps.version.outputs.tag }}
-        name: Release ${{ steps.version.outputs.version }}
-        draft: false
-        prerelease: false
-        generate_release_notes: true
+      run: |
+        $tagName = "${{ steps.version.outputs.tag }}"
+        $versionName = "${{ steps.version.outputs.version }}"
+        Write-Host "使用 GitHub CLI 创建 Release: $tagName"
+        
+        # 创建 Release（如果不存在）
+        $releaseExists = gh release view $tagName 2>$null
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "创建新 Release..."
+          gh release create $tagName `
+            --title "Release $versionName" `
+            --notes "自动构建的 Release" `
+            --draft
+          Start-Sleep -Seconds 2  # 等待 Release 创建完成
+        } else {
+          Write-Host "Release 已存在，跳过创建"
+        }
+        
+        # 分别上传文件
+        Write-Host "上传安装程序..."
+        gh release upload $tagName "dist/灵感录屏工具安装程序.exe" --clobber
+        Start-Sleep -Seconds 1
+        
+        Write-Host "上传可执行文件..."
+        gh release upload $tagName "dist/灵感录屏工具.exe" --clobber
+        Start-Sleep -Seconds 1
+        
+        # 更新 Release 为正式版本（如果不是 draft）
+        Write-Host "发布 Release..."
+        gh release edit $tagName --draft=false --latest
+        Write-Host "Release 创建和文件上传完成"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
 
