@@ -48,7 +48,7 @@ jobs:
           $retryCount = 0
           $downloadSuccess = $false
           
-          while ($retryCount -lt $maxRetries -and -not $downloadSuccess) {
+          while (($retryCount -lt $maxRetries) -and (-not $downloadSuccess)) {
             try {
               $retryCount++
               Write-Host "尝试下载 (第 $retryCount 次)..."
@@ -57,7 +57,7 @@ jobs:
               $ProgressPreference = 'SilentlyContinue'
               Invoke-WebRequest -Uri $innoUrl -OutFile $installerPath -TimeoutSec 120 -UseBasicParsing
               
-              if (Test-Path $installerPath -and (Get-Item $installerPath).Length -gt 0) {
+              if ((Test-Path $installerPath) -and ((Get-Item $installerPath).Length -gt 0)) {
                 Write-Host "下载成功，文件大小: $((Get-Item $installerPath).Length) 字节"
                 $downloadSuccess = $true
               } else {
@@ -78,25 +78,47 @@ jobs:
           }
           
           if (-not $downloadSuccess) {
-            Write-Error "经过 $maxRetries 次尝试后仍无法下载 Inno Setup"
-            exit 1
-          }
-          
-          Write-Host "安装Inno Setup..."
-          Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait
-          Start-Sleep -Seconds 5
-          
-          # 等待安装完成
-          $timeout = 60
-          $elapsed = 0
-          while (-not (Test-Path $isccPath) -and $elapsed -lt $timeout) {
-            Start-Sleep -Seconds 2
-            $elapsed += 2
-          }
-          
-          # 清理安装程序
-          if (Test-Path $installerPath) {
-            Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+            Write-Host "直接下载失败，尝试使用 Chocolatey 安装..."
+            # 尝试使用 Chocolatey 安装
+            $chocoAvailable = $null
+            try {
+              $chocoAvailable = Get-Command choco -ErrorAction Stop
+            } catch {
+              Write-Host "Chocolatey 未找到，尝试安装 Chocolatey..."
+              Set-ExecutionPolicy Bypass -Scope Process -Force
+              [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+              iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+              $chocoAvailable = Get-Command choco -ErrorAction SilentlyContinue
+            }
+            
+            if ($chocoAvailable) {
+              Write-Host "使用 Chocolatey 安装 Inno Setup..."
+              choco install innosetup -y
+              if ($LASTEXITCODE -ne 0) {
+                Write-Error "Chocolatey 安装 Inno Setup 失败，退出代码: $LASTEXITCODE"
+                exit 1
+              }
+            } else {
+              Write-Error "经过 $maxRetries 次尝试后仍无法下载 Inno Setup，且无法使用 Chocolatey"
+              exit 1
+            }
+          } else {
+            Write-Host "安装Inno Setup..."
+            Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait
+            Start-Sleep -Seconds 5
+            
+            # 等待安装完成
+            $timeout = 60
+            $elapsed = 0
+            while ((-not (Test-Path $isccPath)) -and ($elapsed -lt $timeout)) {
+              Start-Sleep -Seconds 2
+              $elapsed += 2
+            }
+            
+            # 清理安装程序
+            if (Test-Path $installerPath) {
+              Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+            }
           }
         }
         
