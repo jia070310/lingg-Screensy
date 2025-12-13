@@ -56,4 +56,4 @@ pyinstaller build_exe.spec --clean --noconfirm
 1. 确保 `ffmpeg` 文件夹包含完整的FFmpeg文件
 2. 确保 `iconic` 文件夹包含所有图标文件，特别是 `logo.ico`
 3. 编译前确保所有依赖已正确安装
-
+4.------
