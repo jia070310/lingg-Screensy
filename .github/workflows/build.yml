@@ -104,15 +104,42 @@ jobs:
             }
           } else {
             Write-Host "安装Inno Setup..."
-            Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait
-            Start-Sleep -Seconds 5
+            $installProcess = Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait -PassThru -NoNewWindow
+            $installExitCode = $installProcess.ExitCode
+            Write-Host "安装程序退出代码: $installExitCode"
+            
+            if ($installExitCode -ne 0 -and $installExitCode -ne $null) {
+              Write-Warning "安装程序返回非零退出代码: $installExitCode"
+            }
+            
+            Start-Sleep -Seconds 10
+            
+            # 检查可能的安装路径
+            $possiblePaths = @(
+              "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+              "$env:ProgramFiles(x86)\Inno Setup 5\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 5\ISCC.exe"
+            )
             
             # 等待安装完成
-            $timeout = 60
+            $timeout = 120
             $elapsed = 0
-            while ((-not (Test-Path $isccPath)) -and ($elapsed -lt $timeout)) {
-              Start-Sleep -Seconds 2
-              $elapsed += 2
+            $found = $false
+            while (-not $found -and $elapsed -lt $timeout) {
+              foreach ($path in $possiblePaths) {
+                if (Test-Path $path) {
+                  Write-Host "找到 Inno Setup: $path"
+                  $isccPath = $path
+                  $found = $true
+                  break
+                }
+              }
+              if (-not $found) {
+                Start-Sleep -Seconds 3
+                $elapsed += 3
+                Write-Host "等待安装完成... (已等待 $elapsed 秒)"
+              }
             }
             
             # 清理安装程序
@@ -122,17 +149,55 @@ jobs:
           }
         }
         
-        if (Test-Path $isccPath) {
-          Write-Host "Inno Setup已安装: $isccPath"
+        # 最终检查所有可能的路径
+        $possiblePaths = @(
+          "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+          "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+          "$env:ProgramFiles(x86)\Inno Setup 5\ISCC.exe",
+          "$env:ProgramFiles\Inno Setup 5\ISCC.exe"
+        )
+        
+        $finalPath = $null
+        foreach ($path in $possiblePaths) {
+          if (Test-Path $path) {
+            $finalPath = $path
+            break
+          }
+        }
+        
+        if ($finalPath) {
+          Write-Host "Inno Setup已安装: $finalPath"
+          # 更新全局变量供后续步骤使用
+          $env:INNO_SETUP_PATH = $finalPath
         } else {
-          Write-Error "Inno Setup安装失败"
+          Write-Error "Inno Setup安装失败，未找到 ISCC.exe"
+          Write-Host "检查的路径:"
+          foreach ($path in $possiblePaths) {
+            Write-Host "  - $path"
+          }
           exit 1
         }
         
     - name: 打包安装程序
       run: |
-        $isccPath = "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
-        if (Test-Path $isccPath) {
+        # 检查所有可能的 Inno Setup 路径
+        $possiblePaths = @(
+          "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe",
+          "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+          "$env:ProgramFiles(x86)\Inno Setup 5\ISCC.exe",
+          "$env:ProgramFiles\Inno Setup 5\ISCC.exe"
+        )
+        
+        $isccPath = $null
+        foreach ($path in $possiblePaths) {
+          if (Test-Path $path) {
+            $isccPath = $path
+            break
+          }
+        }
+        
+        if ($isccPath) {
+          Write-Host "找到 Inno Setup: $isccPath"
           Write-Host "开始打包安装程序..."
           & $isccPath installer.iss
           if ($LASTEXITCODE -ne 0) {
@@ -141,7 +206,10 @@ jobs:
           }
           Write-Host "打包完成"
         } else {
-          Write-Error "Inno Setup未找到: $isccPath"
+          Write-Error "Inno Setup未找到，检查的路径:"
+          foreach ($path in $possiblePaths) {
+            Write-Host "  - $path"
+          }
           exit 1
         }
         
