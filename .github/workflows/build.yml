@@ -348,37 +348,18 @@ jobs:
           dist/灵感录屏工具.exe
         tag_name: ${{ steps.version.outputs.tag }}
         name: Release ${{ steps.version.outputs.version }}
-        draft: false
+        draft: true
         prerelease: false
         generate_release_notes: true
-        body: |
-          ## 📦 安装程序
-          
-          - **灵感录屏工具安装程序.exe** - 完整安装程序（推荐）
-            - 自动安装 FFmpeg 并配置环境变量
-            - 包含所有必要的依赖和资源文件
-          - **灵感录屏工具.exe** - 便携版可执行文件
-            - 可直接运行，无需安装
-            - 需要手动配置 FFmpeg 环境变量
-          
-          ## 🚀 使用方法
-          
-          1. 下载并运行 `灵感录屏工具安装程序.exe`（推荐）
-          2. 按照安装向导完成安装
-          3. 安装程序会自动安装 FFmpeg 到 `C:\ffmpeg` 并配置环境变量
-          4. 安装完成后，从开始菜单或桌面快捷方式启动程序
-          
-          ## 📝 构建信息
-          
-          - **提交**: ${{ github.sha }}
-          - **分支**: ${{ github.ref_name }}
-          - **构建时间**: ${{ github.event.head_commit.timestamp }}
-          
-          ## 🔗 相关链接
-          
-          - [项目主页](https://github.com/${{ github.repository }})
-          - [问题反馈](https://github.com/${{ github.repository }}/issues)
-          - [使用文档](https://github.com/${{ github.repository }}/blob/main/README.md)
+    
+    - name: 发布 Draft Release
+      if: github.event_name != 'pull_request'
+      continue-on-error: true
+      run: |
+        $tagName = "${{ steps.version.outputs.tag }}"
+        Write-Host "发布 Draft Release: $tagName"
+        gh release edit $tagName --draft=false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
 
