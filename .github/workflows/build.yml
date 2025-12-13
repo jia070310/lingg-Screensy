@@ -291,15 +291,38 @@ jobs:
           dist/灵感录屏工具.exe
         retention-days: 30
     
+    - name: 生成版本号
+      if: github.event_name != 'pull_request'
+      id: version
+      run: |
+        # 获取当前日期时间作为版本号
+        $date = Get-Date -Format "yyyyMMdd-HHmmss"
+        # 获取短 commit hash（前7位）
+        $commitHash = "${{ github.sha }}"
+        if ($commitHash.Length -ge 7) {
+          $shortCommit = $commitHash.Substring(0, 7)
+        } else {
+          $shortCommit = $commitHash
+        }
+        # 生成版本号：v1.0.0-日期时间-commithash
+        $tagName = "v1.0.0-$date-$shortCommit"
+        $versionName = "v1.0.0-$date"
+        Write-Host "生成版本号: $tagName"
+        Write-Host "版本名称: $versionName"
+        Write-Host "提交: $shortCommit"
+        "tag=$tagName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "version=$versionName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      shell: pwsh
+    
     - name: 发布到 Releases
-      if: startsWith(github.ref, 'refs/tags/v')
+      if: github.event_name != 'pull_request'
       uses: softprops/action-gh-release@v1
       with:
         files: |
           dist/灵感录屏工具安装程序.exe
           dist/灵感录屏工具.exe
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: Release ${{ steps.version.outputs.version }} (${{ github.sha }})
         draft: false
         prerelease: false
         generate_release_notes: true
@@ -320,14 +343,17 @@ jobs:
           3. 安装程序会自动安装 FFmpeg 到 `C:\ffmpeg` 并配置环境变量
           4. 安装完成后，从开始菜单或桌面快捷方式启动程序
           
-          ## 📝 更新内容
+          ## 📝 构建信息
           
-          查看 [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) 了解详细更新内容。
+          - **提交**: ${{ github.sha }}
+          - **分支**: ${{ github.ref_name }}
+          - **构建时间**: ${{ github.event.head_commit.timestamp }}
           
           ## 🔗 相关链接
           
           - [项目主页](https://github.com/${{ github.repository }})
           - [问题反馈](https://github.com/${{ github.repository }}/issues)
+          - [使用文档](https://github.com/${{ github.repository }}/blob/main/README.md)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
