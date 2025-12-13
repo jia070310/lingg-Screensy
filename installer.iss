@@ -187,9 +187,10 @@ begin
   end;
 end;
 
-// 初始化安装
-procedure InitializeSetup();
+// 初始化向导
+procedure InitializeWizard();
 begin
+  // 初始化变量
   FFmpegInstalled := IsFFmpegInstalled();
   EnvVarSet := False;
 end;
