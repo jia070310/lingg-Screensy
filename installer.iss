@@ -29,9 +29,9 @@ VersionInfoProductVersion={#MyAppVersion}
 VersionInfoDescription={#MyAppName} 安装程序
 VersionInfoCopyright=Copyright (C) 2024
 
-; 中文界面
+; 使用默认英文界面（Inno Setup 6 可能不包含中文语言文件）
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
