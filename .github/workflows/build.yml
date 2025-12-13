@@ -6,6 +6,8 @@ on:
     branches:
       - main
       - master
+    tags:
+      - 'v*'  # 当创建以 v 开头的 tag 时触发（如 v1.0.0）
   pull_request:
     branches:
       - main
@@ -288,4 +290,44 @@ jobs:
           dist/灵感录屏工具安装程序.exe
           dist/灵感录屏工具.exe
         retention-days: 30
+    
+    - name: 发布到 Releases
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/灵感录屏工具安装程序.exe
+          dist/灵感录屏工具.exe
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        body: |
+          ## 📦 安装程序
+          
+          - **灵感录屏工具安装程序.exe** - 完整安装程序（推荐）
+            - 自动安装 FFmpeg 并配置环境变量
+            - 包含所有必要的依赖和资源文件
+          - **灵感录屏工具.exe** - 便携版可执行文件
+            - 可直接运行，无需安装
+            - 需要手动配置 FFmpeg 环境变量
+          
+          ## 🚀 使用方法
+          
+          1. 下载并运行 `灵感录屏工具安装程序.exe`（推荐）
+          2. 按照安装向导完成安装
+          3. 安装程序会自动安装 FFmpeg 到 `C:\ffmpeg` 并配置环境变量
+          4. 安装完成后，从开始菜单或桌面快捷方式启动程序
+          
+          ## 📝 更新内容
+          
+          查看 [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) 了解详细更新内容。
+          
+          ## 🔗 相关链接
+          
+          - [项目主页](https://github.com/${{ github.repository }})
+          - [问题反馈](https://github.com/${{ github.repository }}/issues)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
