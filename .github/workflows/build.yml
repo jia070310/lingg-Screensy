@@ -379,13 +379,9 @@ jobs:
           Write-Host "Release 已存在，跳过创建"
         }
         
-        # 分别上传文件
+        # 上传安装程序
         Write-Host "上传安装程序..."
         gh release upload $tagName "dist/灵感录屏工具安装程序.exe" --clobber
-        Start-Sleep -Seconds 1
-        
-        Write-Host "上传可执行文件..."
-        gh release upload $tagName "dist/灵感录屏工具.exe" --clobber
         Start-Sleep -Seconds 1
         
         # 更新 Release 为正式版本（如果不是 draft）
