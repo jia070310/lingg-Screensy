@@ -159,7 +159,7 @@ begin
   begin
     if not DirExists(FFmpegPath) then
     begin
-      if not DirCreate(FFmpegPath) then
+      if not CreateDir(FFmpegPath) then
       begin
         MsgBox('无法创建FFmpeg目录: ' + FFmpegPath, mbError, MB_OK);
         Exit;
