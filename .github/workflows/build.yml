@@ -38,12 +38,54 @@ jobs:
         $innoUrl = "https://jrsoftware.org/download.php/is.exe"
         $innoPath = "$env:ProgramFiles(x86)\Inno Setup 6"
         $isccPath = "$innoPath\ISCC.exe"
+        $installerPath = "$env:TEMP\is.exe"
+        
         if (-not (Test-Path $isccPath)) {
           Write-Host "下载Inno Setup..."
-          Invoke-WebRequest -Uri $innoUrl -OutFile "$env:TEMP\is.exe"
+          
+          # 重试机制：最多重试3次
+          $maxRetries = 3
+          $retryCount = 0
+          $downloadSuccess = $false
+          
+          while ($retryCount -lt $maxRetries -and -not $downloadSuccess) {
+            try {
+              $retryCount++
+              Write-Host "尝试下载 (第 $retryCount 次)..."
+              
+              # 使用更长的超时时间和重试参数
+              $ProgressPreference = 'SilentlyContinue'
+              Invoke-WebRequest -Uri $innoUrl -OutFile $installerPath -TimeoutSec 120 -UseBasicParsing
+              
+              if (Test-Path $installerPath -and (Get-Item $installerPath).Length -gt 0) {
+                Write-Host "下载成功，文件大小: $((Get-Item $installerPath).Length) 字节"
+                $downloadSuccess = $true
+              } else {
+                throw "下载的文件无效或为空"
+              }
+            }
+            catch {
+              Write-Warning "下载失败 (第 $retryCount 次): $_"
+              if (Test-Path $installerPath) {
+                Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+              }
+              if ($retryCount -lt $maxRetries) {
+                $waitTime = $retryCount * 5
+                Write-Host "等待 ${waitTime} 秒后重试..."
+                Start-Sleep -Seconds $waitTime
+              }
+            }
+          }
+          
+          if (-not $downloadSuccess) {
+            Write-Error "经过 $maxRetries 次尝试后仍无法下载 Inno Setup"
+            exit 1
+          }
+          
           Write-Host "安装Inno Setup..."
-          Start-Process -FilePath "$env:TEMP\is.exe" -ArgumentList "/SILENT /ALLUSERS" -Wait
+          Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait
           Start-Sleep -Seconds 5
+          
           # 等待安装完成
           $timeout = 60
           $elapsed = 0
@@ -51,7 +93,13 @@ jobs:
             Start-Sleep -Seconds 2
             $elapsed += 2
           }
+          
+          # 清理安装程序
+          if (Test-Path $installerPath) {
+            Remove-Item $installerPath -Force -ErrorAction SilentlyContinue
+          }
         }
+        
         if (Test-Path $isccPath) {
           Write-Host "Inno Setup已安装: $isccPath"
         } else {
