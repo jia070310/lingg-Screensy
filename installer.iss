@@ -2,11 +2,9 @@
 #define MyAppVersion "1.0"
 #define MyAppPublisher "灵感录屏工具"
 #define MyAppExeName "灵感录屏工具.exe"
-#define MyAppId "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
-
 [Setup]
 ; 应用程序信息
-AppId={#MyAppId}
+AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
