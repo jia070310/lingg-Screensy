@@ -319,6 +319,26 @@ jobs:
         "version=$versionName" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
       shell: pwsh
     
+    - name: 检查文件是否存在
+      if: github.event_name != 'pull_request'
+      run: |
+        Write-Host "检查构建产物文件..."
+        if (Test-Path "dist/灵感录屏工具安装程序.exe") {
+          $file1 = Get-Item "dist/灵感录屏工具安装程序.exe"
+          Write-Host "✓ 安装程序存在: $($file1.FullName), 大小: $($file1.Length) 字节"
+        } else {
+          Write-Error "✗ 安装程序不存在: dist/灵感录屏工具安装程序.exe"
+          exit 1
+        }
+        if (Test-Path "dist/灵感录屏工具.exe") {
+          $file2 = Get-Item "dist/灵感录屏工具.exe"
+          Write-Host "✓ 可执行文件存在: $($file2.FullName), 大小: $($file2.Length) 字节"
+        } else {
+          Write-Error "✗ 可执行文件不存在: dist/灵感录屏工具.exe"
+          exit 1
+        }
+      shell: pwsh
+    
     - name: 发布到 Releases
       if: github.event_name != 'pull_request'
       uses: softprops/action-gh-release@v1
@@ -327,7 +347,7 @@ jobs:
           dist/灵感录屏工具安装程序.exe
           dist/灵感录屏工具.exe
         tag_name: ${{ steps.version.outputs.tag }}
-        name: Release ${{ steps.version.outputs.version }} (${{ github.sha }})
+        name: Release ${{ steps.version.outputs.version }}
         draft: false
         prerelease: false
         generate_release_notes: true
