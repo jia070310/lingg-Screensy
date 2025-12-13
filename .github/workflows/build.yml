@@ -104,15 +104,48 @@ jobs:
             }
           } else {
             Write-Host "安装Inno Setup..."
-            $installProcess = Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait -PassThru -NoNewWindow
+            # 使用 /DIR 参数指定安装目录，确保安装到预期位置
+            $installDir = "$env:ProgramFiles(x86)\Inno Setup 6"
+            $installArgs = "/SILENT /ALLUSERS /DIR=`"$installDir`""
+            Write-Host "安装参数: $installArgs"
+            $installProcess = Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
             $installExitCode = $installProcess.ExitCode
             Write-Host "安装程序退出代码: $installExitCode"
             
             if ($installExitCode -ne 0 -and $installExitCode -ne $null) {
-              Write-Warning "安装程序返回非零退出代码: $installExitCode"
+              Write-Warning "指定目录安装失败，尝试默认安装..."
+              $installProcess = Start-Process -FilePath $installerPath -ArgumentList "/SILENT /ALLUSERS" -Wait -PassThru -NoNewWindow
+              $installExitCode = $installProcess.ExitCode
+              Write-Host "默认安装退出代码: $installExitCode"
             }
             
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 15
+            
+            # 调试：列出 Program Files 目录
+            Write-Host "检查安装目录..."
+            if (Test-Path "$env:ProgramFiles(x86)") {
+              Write-Host "Program Files (x86) 目录内容:"
+              Get-ChildItem "$env:ProgramFiles(x86)" -Directory -ErrorAction SilentlyContinue | Select-Object -First 20 Name | ForEach-Object { Write-Host "  - $($_.Name)" }
+            }
+            if (Test-Path "$env:ProgramFiles") {
+              Write-Host "Program Files 目录内容:"
+              Get-ChildItem "$env:ProgramFiles" -Directory -ErrorAction SilentlyContinue | Select-Object -First 20 Name | ForEach-Object { Write-Host "  - $($_.Name)" }
+            }
+            
+            # 尝试搜索 ISCC.exe
+            Write-Host "搜索 ISCC.exe..."
+            $searchPaths = @("$env:ProgramFiles(x86)", "$env:ProgramFiles")
+            foreach ($searchPath in $searchPaths) {
+              if (Test-Path $searchPath) {
+                $foundFiles = Get-ChildItem -Path $searchPath -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5
+                if ($foundFiles) {
+                  Write-Host "找到 ISCC.exe 文件:"
+                  foreach ($file in $foundFiles) {
+                    Write-Host "  - $($file.FullName)"
+                  }
+                }
+              }
+            }
             
             # 检查可能的安装路径
             $possiblePaths = @(
@@ -165,16 +198,33 @@ jobs:
           }
         }
         
+        # 如果在预定义路径中找不到，搜索整个系统
+        if (-not $finalPath) {
+          Write-Host "在预定义路径中未找到，搜索整个系统..."
+          $searchPaths = @("$env:ProgramFiles(x86)", "$env:ProgramFiles")
+          foreach ($searchPath in $searchPaths) {
+            if (Test-Path $searchPath) {
+              $foundFile = Get-ChildItem -Path $searchPath -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($foundFile) {
+                $finalPath = $foundFile.FullName
+                Write-Host "通过搜索找到: $finalPath"
+                break
+              }
+            }
+          }
+        }
+        
         if ($finalPath) {
           Write-Host "Inno Setup已安装: $finalPath"
           # 更新全局变量供后续步骤使用
           $env:INNO_SETUP_PATH = $finalPath
         } else {
           Write-Error "Inno Setup安装失败，未找到 ISCC.exe"
-          Write-Host "检查的路径:"
+          Write-Host "检查的预定义路径:"
           foreach ($path in $possiblePaths) {
             Write-Host "  - $path"
           }
+          Write-Host "已搜索目录: $env:ProgramFiles(x86), $env:ProgramFiles"
           exit 1
         }
         
@@ -196,6 +246,22 @@ jobs:
           }
         }
         
+        # 如果在预定义路径中找不到，搜索整个系统
+        if (-not $isccPath) {
+          Write-Host "在预定义路径中未找到，搜索整个系统..."
+          $searchPaths = @("$env:ProgramFiles(x86)", "$env:ProgramFiles")
+          foreach ($searchPath in $searchPaths) {
+            if (Test-Path $searchPath) {
+              $foundFile = Get-ChildItem -Path $searchPath -Filter "ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($foundFile) {
+                $isccPath = $foundFile.FullName
+                Write-Host "通过搜索找到: $isccPath"
+                break
+              }
+            }
+          }
+        }
+        
         if ($isccPath) {
           Write-Host "找到 Inno Setup: $isccPath"
           Write-Host "开始打包安装程序..."
@@ -210,6 +276,7 @@ jobs:
           foreach ($path in $possiblePaths) {
             Write-Host "  - $path"
           }
+          Write-Host "已搜索目录: $env:ProgramFiles(x86), $env:ProgramFiles"
           exit 1
         }
         
