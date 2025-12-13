@@ -177,12 +177,8 @@ begin
       // 设置用户环境变量
       SetEnvironmentVariable(FFmpegBinPath, False);
       
-      // 通知系统环境变量已更改
-      if EnvVarSet then
-      begin
-        // 广播环境变量更改消息
-        SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0, LongInt(PChar('Environment')), SMTO_ABORTIFHUNG, 5000, nil);
-      end;
+      // 注意：环境变量更改需要重启后才能生效
+      // 代码后面会询问用户是否重启
     end
     else
     begin
