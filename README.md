@@ -1,5 +1,5 @@
 # 灵感录屏工具
-
+![image](https://github.com/jia070310/lingg-Screensy/blob/main/iconic/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202025-12-20%20130445.png)
 一个功能强大、界面美观的 Windows 屏幕录制工具，基于 PyQt5 和 FFmpeg 开发，支持区域录制、音频录制、摄像头录制等功能。
 
 ## ✨ 主要特性
