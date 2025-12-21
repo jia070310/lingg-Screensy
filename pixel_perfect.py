@@ -5860,17 +5860,29 @@ class AboutWindow(QWidget):
         lay.setSpacing(15)
 
         labels = [
-            ('灵感录屏工具', "color:#fff;font:24px;font-weight:600"),
-            ('版本 1.0.0', "color:#9CA3AF;font:14px"),
-            ('一款功能强大的屏幕录制工具\n支持全屏录制、自定义区域录制\n支持多种视频格式输出\n简单易用，高效稳定', "color:#D1D5DB;font:13px"),
-            ('官方网站：www.example.com\n技术支持：support@example.com\n联系QQ：123456789\n微信：example_wechat', "color:#9CA3AF;font:12px"),
-            ('© 2024 灵感录屏工具 版权所有', "color:#6B7280;font:11px")
+            ('灵感录屏工具', "color:#fff;font:24px;font-weight:600", False),
+            ('版本 1.0.0', "color:#9CA3AF;font:14px", False),
+            ('一款功能强大的屏幕录制工具\n支持全屏录制、自定义区域录制\n支持多种视频格式输出\n简单易用，高效稳定', "color:#D1D5DB;font:13px", False),
+            ('GitHub地址：https://github.com/jia070310/lingg-Screensy\n技术支持：718339650@qq.com\n联系QQ：718339650\n微信：example_wechat', "color:#9CA3AF;font:12px", True),
+            ('© 2025 灵感录屏工具 版权所有', "color:#6B7280;font:11px", False)
         ]
 
-        for txt, style in labels:
+        for item in labels:
+            if len(item) == 3:
+                txt, style, selectable = item
+            else:
+                txt, style = item
+                selectable = False
+            
             lbl = QLabel(txt)
             lbl.setStyleSheet(style)
             lbl.setAlignment(Qt.AlignCenter)
+            
+            # 如果需要可选择文本，启用文本选择和右键菜单
+            if selectable:
+                lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
+                lbl.setContextMenuPolicy(Qt.DefaultContextMenu)
+            
             lay.addWidget(lbl)
 
         return w
