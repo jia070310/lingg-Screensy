@@ -323,7 +323,7 @@ Type: filesandordirs; Name: "{app}"
 如有问题或建议，请联系：
 
 - Email: 718339650@qq.com
-- GitHub: https://github.com/inspiration-soft/screen-recorder
+- GitHub: https://github.com/jia070310/lingg-Screensy
 
 ---
 
